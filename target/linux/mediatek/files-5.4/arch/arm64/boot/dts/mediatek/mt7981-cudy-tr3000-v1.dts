@@ -1,0 +1,232 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+
+#include "mt7981.dtsi"
+
+/ {
+	model = "Cudy TR3000 v1";
+	compatible = "cudy,tr3000-v1", "mediatek,mt7981";
+
+	aliases {
+		led-boot = &led_system_red;
+		led-failsafe = &led_system_red;
+		led-running = &led_system_white;
+		led-upgrade = &led_system_white;
+		serial0 = &uart0;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200n1 loglevel=8 \
+			    earlycon=uart8250,mmio32,0x11002000";
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
+		};
+
+		mode {
+			label = "mode";
+			linux,code = <BTN_0>;
+			linux,input-type = <EV_SW>;
+			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+			debounce-interval = <60>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		led_system_red: system_red {
+			label = "blue:system";
+			gpios = <&pio 11 GPIO_ACTIVE_LOW>;
+		};
+
+		led_system_white: system_white {
+			label = "white:system";
+			gpios = <&pio 10 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	nmbm_spim_nand {
+		compatible = "generic,nmbm";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		lower-mtd-device = <&spi_nand>;
+		max-reserved-blocks = <64>;
+		forced-create;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL2";
+				reg = <0x00000 0x0100000>;
+				read-only;
+			};
+
+			partition@100000 {
+				label = "u-boot-env";
+				reg = <0x0100000 0x0080000>;
+				read-only;
+			};
+
+			factory: partition@180000 {
+				label = "Factory";
+				reg = <0x180000 0x0200000>;
+				read-only;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					eeprom_factory_0: eeprom@0 {
+						reg = <0x0 0x1000>;
+					};
+				};
+			};
+
+			partition@380000 {
+				label = "bdinfo";
+				reg = <0x380000 0x0040000>;
+				read-only;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					macaddr_bdinfo_de00: macaddr@de00 {
+						compatible = "mac-base";
+						reg = <0xde00 0x6>;
+						#nvmem-cell-cells = <1>;
+					};
+				};
+			};
+
+			partition@3c0000 {
+				label = "FIP";
+				reg = <0x3c0000 0x0200000>;
+				read-only;
+			};
+
+			partition@5c0000 {
+				label = "ubi";
+				reg = <0x5c0000 0x7000000>;
+				compatible = "linux,ubi";
+			};
+		};
+	};
+	usb_vbus: regulator-usb {
+		compatible = "regulator-fixed";
+		regulator-name = "usb-vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpios = <&pio 9 GPIO_ACTIVE_LOW>;
+		regulator-boot-on;
+	};
+};
+
+&eth {
+	status = "okay";
+
+	gmac0: mac@0 {
+		reg = <0>;
+		phy-mode = "2500base-x";
+		phy-handle = <&phy1>;
+		fixed-link {
+			speed = <2500>;
+			full-duplex;
+			pause;
+		};
+	};
+
+	gmac1: mac@1 {
+		label = "lan";
+		compatible = "mediatek,eth-mac";
+		reg = <1>;
+		phy-mode = "gmii";
+		phy-handle = <&phy0>;
+	};
+
+	mdio: mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy0: phy@0 {
+			compatible = "ethernet-phy-id03a2.9461";
+			reg = <0>;
+			nvmem-cells = <&phy_calibration>;
+			nvmem-cell-names = "phy-cal-data";
+		};
+
+		phy1: phy@1 {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <1>;
+			reset-assert-us = <100000>;
+			reset-deassert-us = <100000>;
+			reset-gpios = <&pio 39 GPIO_ACTIVE_LOW>;
+			interrupts = <38 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-parent = <&pio>;
+			realtek,aldps-enable;
+		};
+	};
+};
+
+&hnat {
+	mtketh-wan = "eth0";
+	mtketh-lan = "eth1";
+	mtketh-ppd = "eth1";
+	mtketh-max-gmac = <2>;
+	mtketh-ppe-num = <2>;
+	status = "okay";
+};
+
+&spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi0_flash_pins>;
+	status = "okay";
+
+	spi_nand: spi_nand@0 {
+		compatible = "spi-nand";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0>;
+
+		spi-max-frequency = <52000000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+	};
+};
+
+&pio {
+	spi0_flash_pins: spi0-pins {
+		mux {
+			function = "spi";
+			groups = "spi0", "spi0_wp_hold";
+		};
+	};
+};
+
+
+&uart0 {
+	status = "okay";
+};
+
+&xhci {
+	status = "okay";
+	vbus-supply = <&usb_vbus>;
+};

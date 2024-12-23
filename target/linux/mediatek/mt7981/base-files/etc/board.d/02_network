@@ -54,6 +54,7 @@ mediatek_setup_interfaces()
 	*mt3000* |\
 	glinet,x3000-emmc |\
 	*xe3000* |\
+	cudy,tr3000-v1|\
 	*mt2500*)
 		ucidef_set_interfaces_lan_wan lan "eth0"
 		;;
