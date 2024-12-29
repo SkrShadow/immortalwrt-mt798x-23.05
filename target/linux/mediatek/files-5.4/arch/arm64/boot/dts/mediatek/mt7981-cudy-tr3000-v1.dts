@@ -191,6 +191,7 @@
 	mtketh-wan = "eth0";
 	mtketh-lan = "eth1";
 	mtketh-ppd = "eth1";
+        ext-devices-prefix = "usb", "wwan";
 	mtketh-max-gmac = <2>;
 	mtketh-ppe-num = <2>;
 	status = "okay";
