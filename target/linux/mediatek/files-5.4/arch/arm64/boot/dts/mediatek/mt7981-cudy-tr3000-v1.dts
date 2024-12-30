@@ -146,6 +146,7 @@
 	gmac0: mac@0 {
 		reg = <0>;
 		phy-mode = "2500base-x";
+		compatible = "mediatek,eth-mac";
 		phy-handle = <&phy1>;
 		fixed-link {
 			speed = <2500>;
@@ -174,7 +175,7 @@
 		};
 
 		phy1: phy@1 {
-			compatible = "ethernet-phy-ieee802.3-c45";
+			compatible = "ethernet-phy-id001c.c849";
 			reg = <1>;
 			reset-assert-us = <100000>;
 			reset-deassert-us = <100000>;
@@ -190,6 +191,7 @@
 	mtketh-wan = "eth0";
 	mtketh-lan = "eth1";
 	mtketh-ppd = "eth1";
+        ext-devices-prefix = "usb", "wwan";
 	mtketh-max-gmac = <2>;
 	mtketh-ppe-num = <2>;
 	status = "okay";
